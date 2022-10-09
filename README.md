@@ -67,7 +67,8 @@ class MyFunc : public rse::QuasiNewtonBase<2> {
 
 あとは 初期値や直線探索のパラメータを調整して`ProcMinimization(int nMaxLoop, double epsilon)` で走らせる。
 直線探索のパラメータは、
-$$ F(\boldsymbol{x} + \alpha \boldsymbol{d}) \leq F(\boldsymbol{x}) + \xi \alpha \nabla F(\boldsymbol{x})^T \cdot \boldsymbol{d}$$
+
+$$ F(\boldsymbol{x} + \alpha \boldsymbol{d}) \leq F(\boldsymbol{x}) + \xi \alpha \nabla F(\boldsymbol{x})^T \cdot \boldsymbol{d} $$
 
 に対応し、1回のイタレーションで、 $\alpha \rightarrow \tau \alpha$ と更新される。
 
