@@ -4,7 +4,7 @@
 #include <vector>
 
 
-#define __DEBUG_PRINT_EAA__
+// #define __DEBUG_PRINT_EAA__
 
 namespace rse {
   template <std::size_t nPar>
@@ -55,6 +55,7 @@ class rse::ElasticArmAlgorithm : public rse::QuasiNewtonBase<nPar> {
   }
 
   double Func(const Eigen::Vector<double, nPar>& params);
+  Eigen::Vector<double, nPar> NablaF(const Eigen::Vector<double, nPar> &params);
 
   private:
   int dim_ = 0;
@@ -63,7 +64,6 @@ class rse::ElasticArmAlgorithm : public rse::QuasiNewtonBase<nPar> {
   double T_first_ = 0;
   double T_last_ = 0;
   int step_ = 0;
-
 };
 
 template <std::size_t nPar>
@@ -84,19 +84,51 @@ inline void rse::ElasticArmAlgorithm<nPar>::AddPoints(const T& vec) {
  * @return double free energy
  */
 template <std::size_t nPar>
-double rse::ElasticArmAlgorithm<nPar>::Func(const Eigen::Vector<double, nPar> &params) {
+double rse::ElasticArmAlgorithm<nPar>::Func(const Eigen::Vector<double, nPar> &params_) {
   double free_energy = 0;
-  double beta_ = 1./temperature_;
-  free_energy += nPar * lambda_ * beta_;
+  double beta_ = 1./ temperature_;
+  int data_size = data_points.size();
+  free_energy += data_size * lambda_ * beta_;
 
-  for (int ipoint = 0; ipoint < nPar; ++ipoint) {
-    auto distance = Distance(data_points[ipoint], params);
-    auto antilog  = 1 + std::exp(-beta_ * (distance - lambda_));
-    free_energy -= std::log(antilog);
+  for (int ipoint = 0; ipoint < data_size; ++ipoint) {
+    auto distance = Distance(data_points[ipoint], params_);
+    // auto antilog  = 1 + std::exp(-beta_ * (distance - lambda_));
+    auto expterm = std::exp(-beta_ * (distance - lambda_));
+    free_energy -= std::log1p(expterm); // log(1 + x)
   }
 
-  free_energy += beta_ * Constraint(params);
+  free_energy += beta_ * Constraint(params_);
   return free_energy;
+}
+
+template <std::size_t nPar>
+Eigen::Vector<double, nPar> rse::ElasticArmAlgorithm<nPar>::NablaF(const Eigen::Vector<double, nPar> &params_) {
+  double beta_ = 1. / temperature_;
+  int data_size = data_points.size();
+
+  Eigen::Vector<double, nPar> result;
+  Eigen::Vector<double, nPar> h_;
+  result.setZero();
+  h_.setZero();
+  for (int ipar = 0; ipar < nPar; ++ipar) {
+    for (int ipoint = 0; ipoint < data_size; ++ipoint) {
+      double distance = Distance(data_points[ipoint], params_);
+      double weight   = 1./ (1 + std::exp(-beta_ * (lambda_ - distance)));
+      h_[ipar]      = 1e-3;
+      double fw_    = Distance(data_points[ipoint], params_ + h_);
+      double bw_    = Distance(data_points[ipoint], params_ - h_);
+      result[ipar] += weight * (fw_ - bw_) / (2 * h_[ipar]);
+      h_[ipar] = 0;
+    }
+  }
+  for(int ipar = 0; ipar < nPar; ++ipar) {
+    h_[ipar] = 1e-3;
+    double fw_ = Constraint(params_ + h_);
+    double bw_ = Constraint(params_ - h_);
+    result[ipar] += (fw_ - bw_) / (2 * h_[ipar]);
+    h_[ipar] = 0;
+  }
+  return beta_ * result;
 }
 
 template <std::size_t nPar>
@@ -107,6 +139,7 @@ inline bool rse::ElasticArmAlgorithm<nPar>::ProcessEAA(const std::vector<double>
   std::copy(init_params.begin(), init_params.end(), params.begin());
 
   for (int istep = 0; istep < step_; ++istep) { // annealing step
+    // 0. Evaluate Temperature
     temperature_ = T(istep);
 #ifdef __DEBUG_PRINT_EAA__
     std::cout << "========== annealing step: " << istep << " ==========\n";

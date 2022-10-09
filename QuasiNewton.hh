@@ -5,11 +5,10 @@
 #undef __ARM_NEON__
 #endif
 
-#define _DEBUG_PRINT_QUASI_NEWTON_
+// #define _DEBUG_PRINT_QUASI_NEWTON_
 
-#ifdef _DEBUG_PRINT_QUASI_NEWTON_
 #include <iostream>
-#endif
+
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
@@ -120,9 +119,9 @@ inline bool rse::QuasiNewtonBase<N>::ProcMinimization(int nMaxLoop, double epsil
     // here, Armijo rule
     double alpha = alpha_init;
     int i_itr    = 0;
+    auto f_val   = Func(x_);
     for (; i_itr < max_loop_LS; ++i_itr) {
       auto f_val_shift = Func(x_ + alpha * d_);
-      auto f_val       = Func(x_);
       double threshold = xi_ * alpha * nablaF.transpose() * d_;
       if (f_val_shift - f_val < threshold) break;
       alpha *= tau_;
@@ -130,13 +129,13 @@ inline bool rse::QuasiNewtonBase<N>::ProcMinimization(int nMaxLoop, double epsil
 
     Eigen::Vector<double, N> x_next = x_ + alpha * d_;
     //
-    Eigen::Vector<double, N> s_          = x_next - x_;
-    Eigen::Vector<double, N> nablaF_next = NablaF(x_next);
-    Eigen::Vector<double, N> y_          = nablaF_next - nablaF;
+    auto s_          = x_next - x_;
+    auto nablaF_next = NablaF(x_next);
+    auto y_          = nablaF_next - nablaF;
 
     // update
     double rho = y_.transpose() * s_;
-    Eigen::Matrix<double, N, N> K_ = I_ - y_ * s_.transpose() / rho;
+    auto K_ = I_ - y_ * s_.transpose() / rho;
 
     H_ = K_.transpose() * H_ * K_ + s_ * s_.transpose() / rho;
     x_ = x_next;
