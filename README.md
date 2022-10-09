@@ -42,9 +42,42 @@ $$ F(\theta) =N\lambda-\frac{1}{\beta}\sum_{i=1}^{N}\log \left(1 + e^{-\beta (d_
 # How to Use
 
 
-
 ## Quasi-Newton
 
+一例として、Himmelblau's function $f(x,y)= (x^2 + y - 11)^2 + (x + y^2 - 11)^2$ の最小点を探す。
+`rse::QuasiNewtonBase<nPar>` (nPar はパラメータの数。今の場合、`x, y` の 2 つ) を継承し、`double Func(const Eigen::Vector<double, nPar>&)` を override する。
+
+```c++
+#include "QuasiNewton.hh"
+
+class MyFunc : public rse::QuasiNewtonBase<2> {
+  public:
+  MyFunc() {};
+  ~MyFunc(){};
+
+  // Himmelblau's function
+  // f(x, y) = (x^2 + y - 11)^2 + (x + y^2 - 11)^2
+  double Func(const Eigen::Vector<double, 2> &x) override {
+    auto temp1 = x[0] * x[0] + x[1] - 11;
+    auto temp2 = x[0] + x[1] * x[1] - 7;
+    return temp1 * temp1 + temp2 * temp2;
+  }
+};
+```
+
+あとは 初期値や直線探索のパラメータを調整して`ProcMinimization(int nMaxLoop, double epsilon)` で走らせる。
+直線探索のパラメータは、
+$$ F(\boldsymbol{x} + \alpha \boldsymbol{d}) \leq F(\boldsymbol{x}) + \xi \alpha \nabla F(\boldsymbol{x})^T \cdot \boldsymbol{d}$$
+
+に対応し、1回のイタレーションで、 $\alpha \rightarrow \tau \alpha$ と更新される。
+
+```c++
+  MyFunc *minimizer = new MyFunc(); // 宣言
+  std::vector<double> init_param = {0, 0}; // 初期値 (x,y)=(0,0)
+  minimizer->SetInitalVal(init_param);
+  minimizer->SetLinearSearchParameter(2.0, 0.9, 0.1, 100); // 直線探索のパラメータ
+  bool is_converged = minimizer->ProcMinimization(100, 1e-4); // ループの上限とfの勾配のスレショールド。
+```
 
 
 # Reference
