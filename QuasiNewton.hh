@@ -7,41 +7,44 @@
 
 // #define _DEBUG_PRINT_QUASI_NEWTON_
 
+#ifdef _DEBUG_PRINT_QUASI_NEWTON_
 #include <iostream>
-
+#endif
 
 #include <Eigen/Dense>
 #include <Eigen/Core>
 #include <vector>
 
 namespace rse {
-  template <std::size_t N>
   class QuasiNewtonBase;
 }
 
-template <std::size_t N>
 class rse::QuasiNewtonBase {
   public:
-  QuasiNewtonBase();
-  ~QuasiNewtonBase(){};
+  QuasiNewtonBase(std::size_t nPar) : H_(nPar, nPar), x_(nPar), nPar_(nPar){};
+  virtual ~QuasiNewtonBase(){};
 
   template <class U>
-  inline void SetInitalVal(const U &init_vec);
+  inline void SetInitialVal(const U &init_vec);
 
   inline bool ProcMinimization(int nMaxLoop = 100, double epsilon = 1e-3);
 
-  virtual double Func(const Eigen::Vector<double, N> &) = 0;
-  virtual Eigen::Vector<double, N> NablaF(const Eigen::Vector<double, N> &x);
+  virtual double Func(const Eigen::VectorXd &) = 0;
+  virtual inline Eigen::VectorXd NablaF(const Eigen::VectorXd &x);
   void SetDx(double dx) { dx_ = dx; };
 
   inline void SetLinearSearchParameter(double alpha, double tau, double xi, double nMaxLoop);
-  inline const Eigen::Vector<double, N> &GetVal() const { return x_; };
+  inline void SetAlpha(double alpha) { alpha_init = alpha; };
+  inline void SetXi(double xi) { xi_ = xi; };
+  inline const Eigen::VectorXd &GetVal() const { return x_; };
+  inline const Eigen::MatrixXd &GeMatrix() const { return H_; }
 
   protected:
-  Eigen::Matrix<double, N, N> H_;
-  Eigen::Vector<double, N> x_;
+  Eigen::MatrixXd H_;
+  Eigen::VectorXd x_;
 
   private:
+  std::size_t nPar_ = 0;
   // parameter for linear search
   double alpha_init  = 1.0;
   double tau_        = 0.9;
@@ -50,22 +53,18 @@ class rse::QuasiNewtonBase {
   double dx_         = 1e-3;
 };
 
-template <std::size_t N>
-rse::QuasiNewtonBase<N>::QuasiNewtonBase() {}
 
-template <std::size_t N>
 template <class U>
-inline void rse::QuasiNewtonBase<N>::SetInitalVal(const U &init_vec) {
-  for (int ipar = 0; ipar < N; ++ipar) {
+inline void rse::QuasiNewtonBase::SetInitialVal(const U &init_vec) {
+  for (std::size_t ipar = 0; ipar < nPar_; ++ipar) {
     x_[ipar] = init_vec[ipar];
   }
 }
 
-template <std::size_t N>
-Eigen::Vector<double, N> rse::QuasiNewtonBase<N>::NablaF(const Eigen::Vector<double, N> &x) {
-  Eigen::Vector<double, N> result;
+inline Eigen::VectorXd rse::QuasiNewtonBase::NablaF(const Eigen::VectorXd &x) {
+  Eigen::VectorXd result(nPar_);
   auto x__ = x;
-  for (int i = 0; i < N; ++i) {
+  for (std::size_t i = 0; i < nPar_; ++i) {
     x__[i] += dx_;
     double fw_ = Func(x__);
     x__[i] -= 2 * dx_;
@@ -86,28 +85,28 @@ Eigen::Vector<double, N> rse::QuasiNewtonBase<N>::NablaF(const Eigen::Vector<dou
  * @param xi f(x + alpha * d) - f(x) <= xi * alpha * nablaF * d
  * @param nMaxLoop loopの最大回数
  */
-template <std::size_t N>
-inline void rse::QuasiNewtonBase<N>::SetLinearSearchParameter(double alpha, double tau, double xi, double nMaxLoop) {
+inline void rse::QuasiNewtonBase::SetLinearSearchParameter(double alpha, double tau, double xi, double nMaxLoop) {
   alpha_init  = alpha;
   tau_        = tau;
   xi_         = xi;
   max_loop_LS = nMaxLoop;
 };
 
-template <std::size_t N>
-inline bool rse::QuasiNewtonBase<N>::ProcMinimization(int nMaxLoop, double epsilon) {
-  Eigen::Matrix<double, N, N> I_;
+inline bool rse::QuasiNewtonBase::ProcMinimization(int nMaxLoop, double epsilon) {
+  Eigen::MatrixXd I_(nPar_, nPar_);
   I_.setIdentity();
   H_.setIdentity();
   bool is_converged = false;
   for (int iloop = 0; iloop < nMaxLoop; ++iloop) {
-    Eigen::Vector<double, N> nablaF = NablaF(x_);
+    Eigen::VectorXd nablaF = NablaF(x_);
     double slope = nablaF.norm();
 #ifdef _DEBUG_PRINT_QUASI_NEWTON_
     std::cout << "==== LOOP: " << iloop << " =======\n";
     std::cout << "slope = " << slope << std::endl;
     std::cout << "x_: \n"
               << x_ << std::endl;
+    std::cout << "dx_ = \n"
+              << nablaF << std::endl;
 #endif
     // converge check
     if (slope < epsilon) {
@@ -115,7 +114,7 @@ inline bool rse::QuasiNewtonBase<N>::ProcMinimization(int nMaxLoop, double epsil
       break;
     }
 
-    Eigen::Vector<double, N> d_ = -H_ * nablaF;
+    Eigen::VectorXd d_ = -H_ * nablaF;
     // here, Armijo rule
     double alpha = alpha_init;
     int i_itr    = 0;
@@ -127,7 +126,7 @@ inline bool rse::QuasiNewtonBase<N>::ProcMinimization(int nMaxLoop, double epsil
       alpha *= tau_;
     }
 
-    Eigen::Vector<double, N> x_next = x_ + alpha * d_;
+    Eigen::VectorXd x_next = x_ + alpha * d_;
     //
     auto s_          = x_next - x_;
     auto nablaF_next = NablaF(x_next);
