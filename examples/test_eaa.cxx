@@ -2,17 +2,17 @@
 #include <iostream>
 
 // class definition
-template <std::size_t nPar>
-class EAATest : public rse::ElasticArmAlgorithm<nPar> {
+
+class EAATest : public rse::ElasticArmAlgorithm {
   public:
-  EAATest() : rse::ElasticArmAlgorithm<nPar>(1){};
+  EAATest() : rse::ElasticArmAlgorithm(1, 1){};
   ~EAATest() {};
 
-  double Distance(const Eigen::Vector<double, nPar> &data_point, const Eigen::Vector<double, nPar> &params) override {
+  double Distance(const Eigen::VectorXd &data_point, const Eigen::VectorXd &params) override {
     return (data_point[0] - params[0]) * (data_point[0] - params[0]);
   }
   double GetF(double x) {
-    Eigen::Vector<double, 1> vec;
+    Eigen::VectorXd vec;
     vec[0] = x;
     return this->Func(vec);
   }
@@ -22,12 +22,12 @@ class EAATest : public rse::ElasticArmAlgorithm<nPar> {
 int main() {
   // データ点
   std::vector<std::vector<double>> y{{3.0}, {0.95}, {1.04}, {0.99}, {2.8}, {3.1}, {1.01}, {0.3}, {0.22}, {0.96}, {0.94}, {1.03}, {1.0}, {1}};
-  EAATest<1> eaa;
+  EAATest eaa;
   for (auto &&r : y) {
-    eaa.AddPoints(r);
+    eaa.AddPoints(r, 0.2);
   }
   eaa.SetLinearSearchParameter(1, 0.9, 0.1, 100);
-  eaa.SetAnnealingScheme(20, 0.01, 15, 0.2);
+  eaa.SetAnnealingScheme(20, 0.01, 15);
   eaa.Reserve(y.size());
   std::vector<double> init_param{1};
   eaa.ProcessEAA(init_param, 100, 1e-4);
