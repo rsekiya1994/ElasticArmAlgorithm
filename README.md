@@ -29,11 +29,11 @@ $$ P(\boldsymbol{w}) = \frac{\exp(-\beta E(\boldsymbol{w};\boldsymbol{\theta}))}
 
 ここで、 $\beta$ は逆温度パラメータで温度 $T$を用いて$\beta = 1/T$ と表される。(今はボルツマン定数を $1$ としている)。 $\sum_{\boldsymbol{w}}$ は可能な全ての $\boldsymbol{w}$ の組み合わせ(全 $2^N$ 通り)について足し合わせると言う意味で、分母の分配関数 $Z$は次のように計算ができる。
 
-$$ Z= \sum_{w} \exp{ \left( -\beta \sum_{i=1}^{N} w_i d_i -\beta \lambda \sum_{i=1}^{N}(1-w_i)^2 -\beta V(\boldsymbol{\theta}) \right) } = e^{-\beta V(\boldsymbol{\theta})}\Pi_{i=1}^{N} \left(e^{-\beta\lambda} + e^{-\beta d_i}\right) $$
+$$ Z= \sum_{w} \exp{ \left( -\beta \sum_{i=1}^{N} w_i \frac{d_i}{\lambda_i} -\beta \sum_{i=1}^{N}(1-w_i) -\beta V(\boldsymbol{\theta}) \right) } = e^{-\beta V(\boldsymbol{\theta})}\Pi_{i=1}^{N} \left(e^{-\beta} + e^{-\beta \frac{d_i}{\lambda_i}}\right) $$
 
 従って、ヘルムホルツの自由エネルギー $F=-\frac{1}{\beta} \log{Z}$ は、
 
-$$ F(\theta) =N\lambda-\frac{1}{\beta}\sum_{i=1}^{N}\log \left(1 + e^{-\beta (d_i-\lambda)}\right)+ V(\theta)$$
+$$ F(\theta) =const. -\frac{1}{\beta}\sum_{i=1}^{N}\log \left(1 + e^{-\beta (\frac{d_i}{\lambda_i}-1)}\right)+ V(\theta)$$
 
 となる。一般的に温度が小さい時の平衡状態 $(T\rightarrow 0)$ では、系は低いエネルギーの状態をとる(取りやすくなる)ため、低温における平衡状態を実現するような $\boldsymbol{\theta}$ が結果的にエネルギーが最小となる $\boldsymbol{\theta}$ となる。
 平衡状態は自由エネルギー $F(\boldsymbol{\theta})$ が最小となるような $\boldsymbol{\theta}$ として実現するため、アルゴリズム的には温度を下げるたびに $F(\boldsymbol{\theta})$ を最小化すれば良い。高温の状態だと自由エネルギーは凸関数になるため、平衡状態となる点は局所最適解=大域的最適解となる。次の温度ではその点の近傍で最小点を探索することによって局所最適解に陥る可能性が低くなる。その結果、最終温度において大域的最適解を得られることが期待できる。
