@@ -1,6 +1,5 @@
 #include "QuasiNewton.hh"
 #include <iostream>
-#include <chrono>
 
 class MyFunc : public rse::QuasiNewtonBase {
   public:
@@ -14,9 +13,6 @@ class MyFunc : public rse::QuasiNewtonBase {
     auto temp2 = x[0] + x[1] * x[1] - 7;
     return temp1 * temp1 + temp2 * temp2;
   }
-  // double Func(const Eigen::VectorXd &x) {
-  //   return std::sin(x[0]);
-  // }
 };
 
 int main(int argc, char *argv[]) {
@@ -27,15 +23,8 @@ int main(int argc, char *argv[]) {
   std::vector<double> init_param = {a, b};
   
   minimizer->SetLinearSearchParameter(1.0, 0.9, 0.1, 100);
-  bool is_converged = false;
-  int64_t N = 1000000;
-  auto t0 = system_clock::now();
-  for (int i = 0; i < N; ++i) {
-    minimizer->SetInitialVal(init_param);
-    is_converged = minimizer->ProcMinimization(100, 1e-4);
-  } // for <i>
-  auto t1 = system_clock::now();
-  std::cout << "--* " << duration_cast<milliseconds>(t1 - t0).count() << " [ms]" << std::endl;
+  minimizer->SetInitialVal(init_param);
+  bool is_converged = minimizer->ProcMinimization(100, 1e-4);
   auto param = minimizer->GetVal();
   std::cout << "answer = \n";
   std::cout << param << std::endl;
