@@ -2,9 +2,9 @@
 #include <iostream>
 #include <chrono>
 
-class MyFunc : public rse::QuasiNewtonBase {
+class MyFunc : public rse::QuasiNewton<MyFunc> {
   public:
-  MyFunc(int npar) : rse::QuasiNewtonBase(npar) {};
+  MyFunc(int npar) : rse::QuasiNewton<MyFunc>(npar) {};
   ~MyFunc(){};
 
   // Himmelblau's function
@@ -14,21 +14,23 @@ class MyFunc : public rse::QuasiNewtonBase {
     auto temp2 = x[0] + x[1] * x[1] - 7;
     return temp1 * temp1 + temp2 * temp2;
   }
+
   // double Func(const Eigen::VectorXd &x) {
   //   return std::sin(x[0]);
   // }
 };
-
+// 10,000 回の呼び出しでvirtual関数を使った時に比べて10 ms 程度早くなる。
 int main(int argc, char *argv[]) {
   using namespace std::chrono;
   auto a = std::stof(argv[1]);
   auto b = std::stof(argv[2]);
-  MyFunc *minimizer = new MyFunc(2);
+  rse::QuasiNewton<MyFunc> *minimizer = new rse::QuasiNewton<MyFunc>(2);
+  // MyFunc *minimizer = new MyFunc(2);
   std::vector<double> init_param = {a, b};
-  
+  minimizer->SetInitialVal(init_param);
   minimizer->SetLinearSearchParameter(1.0, 0.9, 0.1, 100);
-  bool is_converged = false;
   int64_t N = 1000000;
+  bool is_converged = false;
   auto t0 = system_clock::now();
   for (int i = 0; i < N; ++i) {
     minimizer->SetInitialVal(init_param);
