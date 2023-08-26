@@ -3,9 +3,10 @@
 #include "QuasiNewton.hh"
 #include <vector>
 #include <valarray>
+#include <iostream>
 
-// #define __DEBUG_PRINT_EAA__
-// #define __ERROR_PRINT_EAA__
+#define __DEBUG_PRINT_EAA__
+#define __ERROR_PRINT_EAA__
 
 namespace rse {
   class ElasticArmAlgorithm;
