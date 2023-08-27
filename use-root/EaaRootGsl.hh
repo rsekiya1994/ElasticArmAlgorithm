@@ -65,6 +65,13 @@ class rse::EaaRootGsl {
     data_points.clear();
     lambdas_.data();
   }
+  inline double GetDistance(int ipoint) {
+    return static_cast<Derived *>(this)->Distance(data_points[ipoint].data(), params_.data());
+  }
+  inline double GetLambda(int idata_point) { return lambdas_[idata_point]; }
+
+  inline void SetTemperature(double T) { temperature_ = T; }
+  double GetTemperature() { return temperature_; };
 
   protected:
   ROOT::Math::Minimizer *minimizer = nullptr;
