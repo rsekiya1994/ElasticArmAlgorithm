@@ -4,6 +4,7 @@
 #include <Math/Factory.h>
 #include <vector>
 #include <TString.h>
+#include <limits>
 
 // #define __ERROR_PRINT_EAA__
 // #define __DEBUG_PRINT_EAA__
@@ -78,15 +79,21 @@ class rse::EaaRootGsl {
   double T_first_     = 0;
   double T_last_      = 0;
   int step_           = 0;
+  inline void Init();
 };
 
 template <class Derived>
 rse::EaaRootGsl<Derived>::EaaRootGsl(int dim, int nPar) : params_(nPar), dim_(dim), nPar_(nPar) {
+  Init();
+}
+
+template <class Derived>
+inline void rse::EaaRootGsl<Derived>::Init() {
   minimizer = ROOT::Math::Factory::CreateMinimizer("GSLMultiMin", "BFGS2");
-  minimizer->SetMaxFunctionCalls(10000);
+  minimizer->SetMaxFunctionCalls(std::numeric_limits<unsigned int>::max());
   minimizer->SetMaxIterations(100);
   minimizer->SetTolerance(0.001);
-  func_ = ROOT::Math::Functor(this, &rse::EaaRootGsl<Derived>::Func, nPar);
+  func_ = ROOT::Math::Functor(this, &rse::EaaRootGsl<Derived>::Func, nPar_);
   minimizer->SetFunction(func_);
   for (int i = 0; i < (int)params_.size(); ++i) {
     minimizer->SetVariable(i, Form("p%d", i), params_[i], 0.01);
